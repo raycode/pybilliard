@@ -234,38 +234,10 @@ class PoolWindow(pyglet.window.Window):
     def on_draw(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glViewport(0, 0, self.width, self.height)
-        self.view.load_matrix()
-
-        # Render lights position
-        '''
-        glPointSize(20*SCALE_FACTOR)
-        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, vec(1, 1, 0, 0))
-        glBegin(GL_POINTS)
-        glVertex3f(*self.lpos1)
-        glVertex3f(*self.lpos2)
-        glEnd()
-        '''
 
         def redraw_scene(self, debug=False):
             # table
             self.table.render()
-
-            '''
-            glDisable(GL_LIGHTING)
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-            # render aim line
-            eye = eVector3(self.cue.mtransform.d, self.cue.mtransform.h, self.cue.mtransform.l)
-            eye += self.cue.direction * 7.5
-            glColor4f(1,1,1, .1)
-            glBegin(GL_LINES)
-            glVertex3f(*eye)
-            eyee = eye + self.cue.direction * 20
-            glVertex3f(eyee.x, eyee.y, eye.z)
-            glEnd()
-            glEnable(GL_LIGHTING)
-            glDisable(GL_BLEND)
-            '''
 
             # rails
             self.rails.render()
@@ -325,17 +297,18 @@ class PoolWindow(pyglet.window.Window):
 
         def render_top_table(self):
             # render top
-            glLoadIdentity();
+            glLoadIdentity()
             gluLookAt(0, 0, 3*SCALE_FACTOR,
                       0, 0, 0,
                       1, 0., 0.)
             redraw_scene(self)
 
         # render table
-        if self.topview:
-            render_top_table(self)
-        else:
+        if not self.topview:
+            self.view.load_matrix()
             redraw_scene(self)
+        else:
+            render_top_table(self)
 
         # render helper windows (for aim and shoot)
         if self._cue_rest() and self.helper:
