@@ -8,7 +8,7 @@ from bullet.bullet import (
     IndexedMesh, TriangleIndexVertexArray, BvhTriangleMeshShape,
     DefaultMotionState, UserMotionState,
     RigidBody,
-    SphereShape, CapsuleShapeZ, CylinderShapeZ, DISABLE_DEACTIVATION)
+    SphereShape, CapsuleShapeZ, DISABLE_DEACTIVATION)
 
 
 class Model(object):
@@ -16,19 +16,20 @@ class Model(object):
     A simple model class.
     The model is loaded from Wavefront OBJ file.
     '''
+
     def __init__(self, filename, view):
         self.model = OBJ_vbo(filename)
         self.view = view
         self.morient = Matrix4()
-        self.pivot = eVector3(0,0,0)
-        self.position = eVector3(0,0,0)
+        self.pivot = eVector3()
+        self.position = eVector3()
         self.do_transformation_matrix()
 
     def do_transformation_matrix(self):
         if self.view.up.y == 1.:
             # Obj's are exported with z axis up (0,0,1), so we need to
             # rotate x for -90 degrees to align with view's y up axis (0,1,0)
-            self.orient.rotatex(-pi/2.)
+            self.orient.rotatex(pi / -2.)
         '''
         Apply transformations in following order (translation -> -pivot -> orientation -> pivot)
         in order to rotate around arbitrary pivot point and properly position the model.
@@ -66,12 +67,14 @@ class Model(object):
         self.model.render()
         glPopMatrix()
 
+
 class TriangleMesh(object):
     '''
     A class used to load OBJ Wavefront mesh
     into IndexedMesh to be used for Bullet
     Shape (i.e. Rigid Body)
     '''
+
     def __init__(self, filename):
         obj = OBJ(filename)
 
@@ -103,7 +106,9 @@ class TriangleMesh(object):
         self.mesh.setVertices(self.vertices.size / 3, 3 * self.vertices.itemsize, self.vertices)
         self.mesh.setIndices(self.indices.size / 3, 3 * self.indices.itemsize, self.indices)
 
+
 class Table(Model, TriangleMesh):
+
     def __init__(self, filename, view):
         Model.__init__(self, filename, view)
         TriangleMesh.__init__(self, filename)
@@ -122,7 +127,7 @@ class Table(Model, TriangleMesh):
         self.body = RigidBody.fromConstructionInfo(motion,              #  MotionState motion
                                                    shape,               #  CollisionShape shape
                                                    0.0,                 #  btScalar mass
-                                                   bVector3(0,0,0),     #  Vector3 inertia
+                                                   bVector3(0, 0, 0),   #  Vector3 inertia
                                                    transform,           #  Transform worldTransform
                                                    0.0,                 #  btScalar linearDamping
                                                    0.0,                 #  btScalar angularDamping
@@ -133,7 +138,9 @@ class Table(Model, TriangleMesh):
         self.motion = motion
         self.body.setContactProcessingThreshold(0)
 
+
 class Rails(Model, TriangleMesh):
+
     def __init__(self, filename, view):
         Model.__init__(self, filename, view)
         TriangleMesh.__init__(self, filename)
@@ -152,7 +159,7 @@ class Rails(Model, TriangleMesh):
         self.body = RigidBody.fromConstructionInfo(motion,              #  MotionState motion
                                                    shape,               #  CollisionShape shape
                                                    0.0,                 #  btScalar mass
-                                                   bVector3(0,0,0),     #  Vector3 inertia
+                                                   bVector3(0, 0, 0),   #  Vector3 inertia
                                                    transform,           #  Transform worldTransform
                                                    0.0,               	#  btScalar linearDamping
                                                    0.0,               	#  btScalar angularDamping
@@ -163,7 +170,9 @@ class Rails(Model, TriangleMesh):
         self.motion = motion
         self.body.setContactProcessingThreshold(0)
 
+
 class CSMotionState(UserMotionState):
+
     def getWorldTransform(self):
         p = self.cue.pivot
         t = self.cue.position
@@ -177,7 +186,9 @@ class CSMotionState(UserMotionState):
     def setWorldTransform(self, transform):
         self.transform = transform
 
+
 class CueStick(Model):
+    # TODO: move constants to the bindings
     CF_KINEMATIC_OBJECT = 2
     CF_NO_CONTACT_RESPONSE = 4
 
@@ -211,7 +222,7 @@ class CueStick(Model):
         self.body.setContactProcessingThreshold(0)
         self.body.setCcdMotionThreshold(0)
         self.body.setHitFraction(0.1 * SCALE_FACTOR)
-        self.body.setGravity(bVector3(0,0,0))
+        self.body.setGravity(bVector3(0, 0, 0))
 
         # Make it kinematic body with collision contacts generation but no response impulses
         flags = self.body.getCollisionFlags() | CueStick.CF_KINEMATIC_OBJECT | CueStick.CF_NO_CONTACT_RESPONSE
@@ -225,7 +236,7 @@ class CueStick(Model):
         '''
         c = self.view.dir.cross(self.view.up).normalize()
         self.direction = eVector3(*self.view.dir)
-        self.direction = self.direction.rotate_around(c, pi/32.)
+        self.direction = self.direction.rotate_around(c, pi / 32.)
         super(CueStick, self).orient_from_direction(self.direction)
         self.update_body_position()
 
@@ -257,8 +268,10 @@ class CueStick(Model):
             self.dx += -dx
             self.dy += -dy
 
+
 class CueBall(Model):
-    def __init__(self, filename, view, mass, position=eVector3(0,0,0)):
+
+    def __init__(self, filename, view, mass, position=eVector3()):
         super(CueBall, self).__init__(filename, view)
         self.radius = self.model.dimension.z / 2.0
         self.mass = mass

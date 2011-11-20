@@ -3,6 +3,7 @@ from math import pi, acos
 from euclid import (Vector3, Matrix4)
 from obj import SCALE_FACTOR
 
+
 class Camera(object):
     MIN_DISTANCE = .25 * SCALE_FACTOR
     '''
@@ -10,6 +11,7 @@ class Camera(object):
     The camera is used for View class in order to support rotating,
     panning and zooming of view, as well as predefined views.
     '''
+
     def __init__(self, eye, center=Vector3(), up=Vector3(0., 0., 1.)):
         self.orient = Matrix4()
         self.eye = Vector3(*eye)
@@ -102,10 +104,12 @@ PIOVER2 = pi / 2.
 PIOVER16 = pi / 16.
 _2PI = 2. * pi
 
+
 class View(Camera):
     '''
     The altitude - azimuth view class with fixed up vector.
     '''
+
     def __init__(self, *args, **kwargs):
         super(View, self).__init__(*args, **kwargs)
         # Save normalized direction vector

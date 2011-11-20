@@ -12,14 +12,17 @@ from numpy import array
 from euclid import Vector3
 from sys import float_info
 
+
 # Convert a list to a ctype string for pickling
-def toctype(val, btype = ctypes.c_float):
+def toctype(val, btype=ctypes.c_float):
     a = (btype * len(val))(*val)
     return ctypes.string_at(a, ctypes.sizeof(a))
 
+
 # Convert an unpickled string to a ctype array
-def fromctype(s, btype = ctypes.c_float):
+def fromctype(s, btype=ctypes.c_float):
     return (btype * (len(s) // ctypes.sizeof(btype))).from_buffer_copy(s)
+
 
 # Define a simple function to create ctypes arrays of floats:
 def vec(*args):
@@ -27,23 +30,27 @@ def vec(*args):
 
 SCALE_FACTOR = 10.0
 
+
 # TODO: cache textures between files
 class MTL(object):
     """Material info for a 3-D model as represented in an MTL file"""
+
     def __init__(self, filename):
         """Read data from the file"""
         self.contents = {}
         mtl = None
         for line in open(filename, "r"):
-            if line.startswith('#'): continue
+            if line.startswith('#'):
+                continue
             values = line.split()
-            if not values: continue
+            if not values:
+                continue
             if values[0] == 'newmtl':
                 if len(values) == 1:
                     values.append('NoNameMat')
                 mtl = self.contents[values[1]] = {}
             elif mtl is None:
-                raise ValueError, "mtl file doesn't start with newmtl stmt"
+                raise ValueError("mtl file doesn't start with newmtl stmt")
             elif values[0] == 'map_Kd':
                 pos = filename.find('/') + 1
                 mtl['map_Kd'] = filename[0:pos] + values[1]
@@ -57,7 +64,8 @@ class MTL(object):
     def generate(self):
         """Generate the textures necessary for any materials"""
         for mtl in self.contents.values():
-            if 'image' not in mtl: continue
+            if 'image' not in mtl:
+                continue
             mtl['texture'] = mtl['image'].get_texture()
 
     def bind(self, material):
@@ -99,11 +107,11 @@ class OBJ(object):
 
     def getpoint(self, values):
         """Extract a 3-d point"""
-        indices = (0,2,1) if self.swapyz else (0,1,2)
+        indices = (0, 2, 1) if self.swapyz else (0, 1, 2)
         return tuple(float(values[i]) for i in indices)
 
     @staticmethod
-    def getentry(entrylist, key, join = True):
+    def getentry(entrylist, key, join=True):
         """Get the value corresponding to a given key in a list of key,value pairs.
         The keys in this list are not necessarily unique. If join is False, a value may
         only be returned if it's last in the list. If necessary, a new key,value pair
@@ -134,7 +142,8 @@ class OBJ(object):
         lines = open(filename, "r").read().replace("\\\n", " ").splitlines()
         for line in lines:
             values = line.partition('#')[0].split()
-            if not values: continue
+            if not values:
+                continue
             elif values[0] == 's':
                 pass
                 #smoothing = values[1] not in ("off", "0")
@@ -143,12 +152,18 @@ class OBJ(object):
                 # Get min and max vertices
                 v = Vector3(*map(float, values[1:]))
                 v *= SCALE_FACTOR
-                if v.x > self.vmax.x: self.vmax.x = v.x
-                if v.y > self.vmax.y: self.vmax.y = v.y
-                if v.z > self.vmax.z: self.vmax.z = v.z
-                if v.x < self.vmin.x: self.vmin.x = v.x
-                if v.y < self.vmin.y: self.vmin.y = v.y
-                if v.z < self.vmin.z: self.vmin.z = v.z
+                if v.x > self.vmax.x:
+                    self.vmax.x = v.x
+                if v.y > self.vmax.y:
+                    self.vmax.y = v.y
+                if v.z > self.vmax.z:
+                    self.vmax.z = v.z
+                if v.x < self.vmin.x:
+                    self.vmin.x = v.x
+                if v.y < self.vmin.y:
+                    self.vmin.y = v.y
+                if v.z < self.vmin.z:
+                    self.vmin.z = v.z
 
                 self.vertices.append(v)
 
@@ -210,7 +225,7 @@ class OBJ(object):
 
         # The object must be centered
         self.dimension = self.vmax - self.vmin
-        center = self.vmin + self.dimension*0.5
+        center = self.vmin + self.dimension * 0.5
         assert center.magnitude_squared() is not 0.0
 
     def process(self):
@@ -240,8 +255,10 @@ class OBJ(object):
                 shape = [GL_TRIANGLES, GL_QUADS, GL_POLYGON][nvs-3]
                 glBegin(shape)
                 for i in range(len(vertices)):
-                    if donorm: glNormal3fv(self.normals[normals[i] - 1])
-                    if dotex: glTexCoord2fv(self.texcoords[texture_coords[i] - 1])
+                    if donorm:
+                        glNormal3fv(self.normals[normals[i] - 1])
+                    if dotex:
+                        glTexCoord2fv(self.texcoords[texture_coords[i] - 1])
                     glVertex3fv(self.vertices[vertices[i] - 1])
                 glEnd()
 
@@ -262,7 +279,8 @@ class OBJ(object):
 
     def __del__(self):
         if self.generated and self.use_list and glDeleteLists:
-            glDeleteLists(self.gl_list,1)
+            glDeleteLists(self.gl_list, 1)
+
 
 class OBJ_array(OBJ):
     """3-D model using vertex arrays"""
@@ -280,8 +298,8 @@ class OBJ_array(OBJ):
                 inds = []
                 for v, vn, vt in zip(vs, vns, vts):
                     ivertex = tuple(self.vertices[v-1])
-                    inorm = tuple(self.normals[vn-1]) if vn else (0.,0.,0.)
-                    itcoord = tuple(self.texcoords[vt-1]) if vt else (0.,0.)
+                    inorm = tuple(self.normals[vn-1]) if vn else (0., 0., 0.)
+                    itcoord = tuple(self.texcoords[vt-1]) if vt else (0., 0.)
                     key = ivertex, inorm, itcoord
                     if key not in imap:
                         imap[key] = len(imap)
@@ -316,6 +334,7 @@ class OBJ_array(OBJ):
                 shape = [GL_TRIANGLES, GL_QUADS, GL_POLYGON][nvs-3]
                 glDrawElements(shape, len(ilist), GL_UNSIGNED_INT, ilist)
 
+
 class OBJ_vbo(OBJ):
     """3-D model using vertex buffer objects"""
 
@@ -335,8 +354,8 @@ class OBJ_vbo(OBJ):
                 j = len(vertices)
                 for v, vn, vt in zip(vs, vns, vts):
                     ivertex = tuple(self.vertices[v-1])
-                    inorm = tuple(self.normals[vn-1]) if vn else (0.,0.,0.)
-                    itcoord = tuple(self.texcoords[vt-1]) if vt else (0.,0.)
+                    inorm = tuple(self.normals[vn-1]) if vn else (0., 0., 0.)
+                    itcoord = tuple(self.texcoords[vt-1]) if vt else (0., 0.)
                     vertices.append(ivertex)
                     normals.append(inorm)
                     texcoords.append(itcoord)
@@ -378,4 +397,3 @@ class OBJ_vbo(OBJ):
             self.vbo_n.delete()
             self.vbo_t.delete()
         OBJ.__del__(self)
-

@@ -5,12 +5,15 @@ from view import View
 from model import (Table, Rails, CueBall, CueStick)
 import time
 from euclid import Vector3 as eVector3, Matrix4
-from bullet.bullet import (Vector3 as bVector3, Quaternion, DiscreteDynamicsWorld, DRAW_WIREFRAME, DRAW_CONTACT_POINTS)
+from bullet.bullet import (Vector3 as bVector3, DiscreteDynamicsWorld,
+                           DRAW_WIREFRAME, DRAW_CONTACT_POINTS)
 from obj import SCALE_FACTOR
 
-# Define a simple function to create ctypes arrays of floats:
+
+# Define a simple function to create ctypes arrays of floats
 def vec(*args):
     return (GLfloat * len(args))(*args)
+
 
 class DebugDraw:
     mode = DRAW_WIREFRAME | DRAW_CONTACT_POINTS
@@ -55,7 +58,7 @@ class PoolWindow(pyglet.window.Window):
         glLightfv(GL_LIGHT0, GL_POSITION, vec(*self.lpos1))
         glLightfv(GL_LIGHT1, GL_POSITION, vec(*self.lpos2))
 
-        glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
+        glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE)
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
         glEnable(GL_LIGHT1)
@@ -64,16 +67,19 @@ class PoolWindow(pyglet.window.Window):
         self.wheel_step = PoolWindow.ZOOM_SCROLL_STEP
 
         # Setup view
-        self.view = View(eye=(0, -3 * SCALE_FACTOR, .75 * SCALE_FACTOR), center=(0, 0, -SCALE_FACTOR))
-        self.view.set_distance(1 * SCALE_FACTOR)
+        self.view = View(eye=(0, -3 * SCALE_FACTOR, .75 * SCALE_FACTOR),
+                         center=(0, 0, -SCALE_FACTOR))
+        self.view.set_distance(SCALE_FACTOR)
 
         # The scene
         self.table = Table('obj/table.obj', self.view)
         self.rails = Rails('obj/rails.obj', self.view)
         self.ball = {}
         self.ball['cue'] = CueBall('obj/ball.obj', self.view, .260)
-        self.ball['red'] = CueBall('obj/red.obj', self.view, .260, eVector3(0,.5 * SCALE_FACTOR,0))
-        self.ball['yellow'] = CueBall('obj/yellow.obj', self.view, .260, eVector3(0,-.5 * SCALE_FACTOR,0))
+        self.ball['red'] = CueBall('obj/red.obj', self.view, .260,
+                                   eVector3(0, 0.5 * SCALE_FACTOR, 0))
+        self.ball['yellow'] = CueBall('obj/yellow.obj', self.view, .260,
+                                      eVector3(0, -0.5 * SCALE_FACTOR, 0))
         self.cue = CueStick('obj/cue.obj', self.view, self.ball['cue'].radius)
 
         self.table.body.setUserPointer("Table")
@@ -111,13 +117,13 @@ class PoolWindow(pyglet.window.Window):
         self.topview = False
         self.helper = True
 
-        self.push_handlers(on_key_press = self._on_key_press)
+        self.push_handlers(on_key_press=self._on_key_press)
 
     def _setup_pan(self):
-        self.view.pan(0, -self.width/5)
+        self.view.pan(0, - self.width / 5.0)
 
     def internal_tick_callback(self, timeStep):
-        if self._cue_rest():
+        if self._cue_ball_rest():
             disp = self.world.getDispatcher()
             n = disp.getNumManifolds()
             for i in xrange(n):
@@ -126,15 +132,16 @@ class PoolWindow(pyglet.window.Window):
                 for c in xrange(contacts):
                     obA = cm.getBody0().getUserPointer()
                     obB = cm.getBody1().getUserPointer()
-                    if obA == 'Cue' and obB == 'Cue Ball' or obA == 'Cue Ball' and obB == 'Cue':
+                    if obA == 'Cue' and obB == 'Cue Ball' \
+                    or obA == 'Cue Ball' and obB == 'Cue':
                         p = cm.getContactPoint(c)
                         if p.getDistance() < 0.0: # test for penetration
-                            # The cue's strike force is calculated from actual linear velocity
-                            # applied to the cues orientation vector
+                            # The cue's strike force is calculated from actual
+                            # linear velocity applied to the cues orientation vector
                             b = self.cue.body.getLinearVelocity()
                             v = eVector3(b.x, b.y, b.z)
-                            d = self.cue.direction if hasattr(self.cue, 'direction') else self.view.dir
-
+                            d = self.cue.direction if hasattr(self.cue, 'direction') \
+                                                   else self.view.dir
                             # get force
                             impuls = v.magnitude() * SCALE_FACTOR * 25.
                             force = bVector3(d.x * impuls,
@@ -159,7 +166,7 @@ class PoolWindow(pyglet.window.Window):
             # check for flying
             pos = ball.motion.getWorldTransform().getOrigin()
             if pos.z > ball.radius:
-                ball.body.applyCentralForce(bVector3(0,0,-15*SCALE_FACTOR))
+                ball.body.applyCentralForce(bVector3(0, 0, -15 * SCALE_FACTOR))
             # check for ball speed
             v = ball.body.getLinearVelocity()
             vel = eVector3(v.x, v.y, v.z)
@@ -174,7 +181,7 @@ class PoolWindow(pyglet.window.Window):
             self.view.zoom_distance = y
 
     def on_mouse_motion(self, x, y, dx, dy):
-        if self.keys[key.LCTRL] and self._cue_rest():
+        if self.keys[key.LCTRL] and self._cue_ball_rest():
             self.cue.delta = dy * -0.01 * SCALE_FACTOR
 
     def on_mouse_drag(self, x, y, dx, dy, button, modifiers):
@@ -243,7 +250,7 @@ class PoolWindow(pyglet.window.Window):
             self.rails.render()
 
             # balls
-            def draw_ball(ball):
+            for ball in self.ball.values():
                 p = ball.motion.getWorldTransform().getOrigin()
                 q = ball.motion.getWorldTransform().getRotation()
                 a = q.getAxis()
@@ -251,14 +258,11 @@ class PoolWindow(pyglet.window.Window):
                 ball.orient_from_axis_angle(q.getAngle(), eVector3(a.x, a.y, a.z))
                 ball.render()
 
-            for ball in self.ball.values():
-                draw_ball(ball)
-
-            # cue stick
-            if self._cue_rest():
+            # cue stick (only if cue ball is resting)
+            if self._cue_ball_rest():
                 self.cue.render()
 
-            # Debug draw
+            # debug draw
             if debug:
                 self.debug.reset()
                 self.world.debugDrawWorld()
@@ -273,19 +277,19 @@ class PoolWindow(pyglet.window.Window):
 
         def render_top_cue(self):
             # Redraw helper top-right (top view)
-            glViewport(self.width - self.width / 3, self.height - self.height/3, self.width / 3, self.height / 3);
-            glLoadIdentity();
+            glViewport(self.width - self.width / 3, self.height - self.height / 3, self.width / 3, self.height / 3)
+            glLoadIdentity()
             # top-view
             pos = self.ball['cue'].position
-            gluLookAt(pos.x, pos.y, pos.z+SCALE_FACTOR/2,
+            gluLookAt(pos.x, pos.y, pos.z + SCALE_FACTOR / 2,
                       pos.x, pos.y, pos.z,
                       1., 0., 0.)
             redraw_scene(self)
 
         def render_front_cue(self):
             # Redraw helper top-right (front view)
-            glViewport(self.width - self.width / 3, self.height - self.height/3, self.width / 3, self.height / 3);
-            glLoadIdentity();
+            glViewport(self.width - self.width / 3, self.height - self.height / 3, self.width / 3, self.height / 3)
+            glLoadIdentity()
             eye = eVector3(self.cue.mtransform.d, self.cue.mtransform.h, self.cue.mtransform.l)
             eye += self.cue.direction * 6.
             # render front
@@ -298,7 +302,7 @@ class PoolWindow(pyglet.window.Window):
         def render_top_table(self):
             # render top
             glLoadIdentity()
-            gluLookAt(0, 0, 3*SCALE_FACTOR,
+            gluLookAt(0, 0, 3 * SCALE_FACTOR,
                       0, 0, 0,
                       1, 0., 0.)
             redraw_scene(self)
@@ -311,9 +315,11 @@ class PoolWindow(pyglet.window.Window):
             render_top_table(self)
 
         # render helper windows (for aim and shoot)
-        if self._cue_rest() and self.helper:
-            if self.keys[key.LSHIFT]: render_front_cue(self)
-            elif not self.topview:    render_top_cue(self)
+        if self._cue_ball_rest() and self.helper:
+            if self.keys[key.LSHIFT]:
+                render_front_cue(self)
+            elif not self.topview:
+                render_top_cue(self)
 
     def _step(self, dt):
         timeStep = fixedTimeStep = 1.0 / 300.0
@@ -325,7 +331,7 @@ class PoolWindow(pyglet.window.Window):
         # Cancel cue stick motion
         self.cue.delta = 0.0
 
-    def _cue_rest(self):
+    def _cue_ball_rest(self):
         vel = self.ball['cue'].body.getLinearVelocity()
         mag = eVector3(vel.x, vel.y, vel.z).magnitude()
         return mag < 0.001
